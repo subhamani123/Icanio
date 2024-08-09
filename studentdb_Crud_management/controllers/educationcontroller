@@ -1,0 +1,70 @@
+const Education = require('../models/education');
+const User=require('../models/user')
+// Get all education details
+exports.getAllEducationDetails = async (req, res) => {
+  try {
+    const educationDetails = await Education.find({}).populate('user');
+    res.status(200).json(educationDetails);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Post an education for an existing student
+exports.addEducation = async (req, res) => {
+  try {
+      const { userId } = req.params;
+      const { education } = req.body;
+
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).send({ message: "Student Not found" });
+      }
+
+      // Add education
+      const educational = new Education({
+        user: userId,
+        education: {
+          degree: education.degree,
+          institute: { 
+            name: education.institute.name, 
+            location: education.institute.location,
+          },
+          marks: education.marks,
+        }
+      });
+      await educational.save();
+      user.education.push(education._id);
+      await user.save();
+      res.status(201).send({ message: "Education Added to the user", user });
+  } catch (error) {
+      console.error(error);
+      res.status(500).send({ message: "Server Error" });
+  }
+};
+
+// Update education details
+exports.updateEducation = async (req, res) => {
+  try {
+    const education = await Education.findByIdAndUpdate(req.params.id, {
+      degree: req.body.degree,
+      institute: { name: req.body.instituteName, location: req.body.location },
+      marks: req.body.marks
+    }, { new: true });
+    if (!education) return res.status(404).json({ error: 'Education not found' });
+    res.status(200).json(education);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Delete education details
+exports.deleteEducation = async (req, res) => {
+  try {
+    const education = await Education.findByIdAndDelete(req.params.id);
+    if (!education) return res.status(404).json({ error: 'Education not found' });
+    res.status(200).json({ message: 'Education deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

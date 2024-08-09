@@ -1,0 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const personalcontroller = require('../controllers/personalcontroller');
+
+// Routes for personal details operations
+router.put('/:userId', personalcontroller.updatePersonalDetails);
+router.get('/:userId', personalcontroller.getPersonalDetails);
+
+module.exports = router;

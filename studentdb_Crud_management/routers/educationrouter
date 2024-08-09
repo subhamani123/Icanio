@@ -1,0 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const educationcontroller = require('../controllers/educationcontroller');
+
+// Routes for education operations
+router.get('/', educationcontroller.getAllEducationDetails);
+router.post('/:userId', educationcontroller.addEducation);
+router.put('/:id', educationcontroller.updateEducation);
+router.delete('/:id', educationcontroller.deleteEducation);
+
+module.exports = router;

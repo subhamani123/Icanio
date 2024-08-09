@@ -1,0 +1,42 @@
+const Personal = require('../models/personal');
+const User = require('../models/user');
+
+// Update personal details
+exports.updatePersonalDetails = async (req, res) => {
+  try {
+    const { doorno, street, city, pincode, dob, age, gender } = req.body;
+
+    // Find the personal details document by user ID
+    const personal = await Personal.findOne({ user: req.params.userId });
+    if (!personal) return res.status(404).json({ error: 'Personal details not found' });
+
+    // Update the personal details
+    personal.address.doorno = doorno;
+    personal.address.street = street;
+    personal.address.city = city;
+    personal.address.pincode = pincode;
+    personal.bioData.dob = dob;
+    personal.bioData.age = age;
+    personal.bioData.gender = gender;
+
+    // Save the updated personal details
+    await personal.save();
+
+    res.status(200).json(personal);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Get personal details for a user
+exports.getPersonalDetails = async (req, res) => {
+  try {
+    // Find the personal details document by user ID
+    const personal = await Personal.findOne({ user: req.params.userId });
+    if (!personal) return res.status(404).json({ error: 'Personal details not found' });
+
+    res.status(200).json(personal);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

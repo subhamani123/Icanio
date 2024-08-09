@@ -1,0 +1,124 @@
+const User = require('../models/user'); // Ensure correct path and capitalization
+const Personal = require('../models/personal'); // Ensure correct path and capitalization
+const Education = require('../models/education'); // Ensure correct path and capitalization
+
+// Add a new user with personal and educational details
+exports.addUser = async (req, res) => {
+  try {
+    const { name, email, password, mobileno, role, address, bioData, education } = req.body;
+
+    console.log('Request body:', req.body); // Debugging statement
+    
+    // Check if all required fields are provided
+    if (!address || !bioData || !bioData.dob || !bioData.age || !bioData.gender) {
+      return res.status(400).json({ error: 'Missing required address or bioData fields' });
+    }
+
+    if (!education || !Array.isArray(education)) {
+      return res.status(400).json({ error: 'Invalid education field' });
+    }
+
+    // Create new user
+    const newUser = new User({ name, email, password, mobileno, role });
+
+    // Create new personal details
+    const personal = new Personal({
+      address: {
+        doorno: address.doorno,
+        street: address.street,
+        city: address.city,
+        pincode: address.pincode
+      },
+      bioData: {
+        dob: bioData.dob,
+        age: bioData.age,
+        gender: bioData.gender
+      },
+      user: newUser._id
+    });
+    await personal.save();
+
+    // Link the personal details to the user
+    newUser.personal = personal._id;
+
+    // Create education documents for each education entry provided
+    const educationDocs = await Promise.all(
+      education.map(async (edu) => {
+        const educationDoc = new Education({
+          degree: edu.degree,
+          institute: {
+            name: edu.instituteName,
+            location: edu.location
+          },
+          marks: edu.marks,
+          
+          user: newUser._id
+        });
+        await educationDoc.save();
+        const populatedDoc = await Education.findById(educationDoc._id)
+                             .populate('education'); // replace 'fieldName2' with the actual field name
+        return populatedDoc;
+
+      })
+    );
+
+    // Link the education documents to the user
+    newUser.education = educationDocs;
+
+    // Save the user with linked personal and education details
+    await newUser.save();
+
+    res.json({
+        message: "Successfully created.",
+      });
+
+    // Respond with the newly created user
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+
+// Get all users with their personal and educational details
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().populate('personal').populate('education');
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Get one user by ID with their personal and educational details
+exports.getOneUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate('personal').populate('education');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Update a user's details
+exports.updateUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Delete a user by ID
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
